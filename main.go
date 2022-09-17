@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
-	"log"
+	"fmt"
 	"os"
 	"os/exec"
 )
@@ -43,7 +43,8 @@ func main() {
 
 	err := execute()
 	if err != nil {
-		log.Printf("error: %v", err)
+		fmt.Printf("error: %v\n", err)
+		flag.Usage()
 		os.Exit(1)
 	}
 }
@@ -66,14 +67,14 @@ func execute() error {
 	args = addDateQuery(args)
 
 	if debug {
-		log.Println("debug: ", args)
+		fmt.Println("debug: ", args)
 	}
 	out, err := exec.Command(hledger, args...).Output()
 	if err != nil {
 		return err
 	}
 
-	log.Println(string(out))
+	fmt.Println(string(out))
 	return nil
 }
 
