@@ -72,17 +72,14 @@ func main() {
 func execute() error {
 	args := make([]string, 0)
 
+	// if..else ladder helps eliminate the unhandled situation of more than 1 cmd
 	if cmdReg {
 		args = append(args, register)
 		args = addDateQuery(args)
-	}
-
-	if cmdBal {
+	} else if cmdBal {
 		args = append(args, balance)
 		args = addDateQuery(args)
-	}
-
-	if cmdImport {
+	} else if cmdImport {
 		if argDateQuery != "" {
 			return errors.New("date query with import not understood")
 		}
@@ -106,7 +103,7 @@ func execute() error {
 	}
 
 	if len(args) < 1 {
-		return errors.New("1 arg required")
+		return fmt.Errorf("1 arg required. got %d", len(args))
 	}
 
 	if debug {
