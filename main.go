@@ -25,9 +25,9 @@ const (
 var (
 	debug bool
 
-	cmdReg    bool
-	cmdBal    bool
-	cmdImport bool
+	regCmd    *flag.FlagSet
+	balCmd    *flag.FlagSet
+	importCmd *flag.FlagSet
 
 	dateLastMonth bool
 	dateThisMonth bool
@@ -41,71 +41,119 @@ var (
 	argNoDry     bool
 )
 
+var usage = `Usage of hledger-cmds:
+  ./cmd <cmd> [options]
+
+  cmd: one of [reg, bal, import]
+  For more help, use
+     ./cmd <cmd> -h
+`
+
 func main() {
+	regCmd = flag.NewFlagSet("reg", flag.ExitOnError)
+	regCmd.BoolVar(&dateLastMonth, "last", false, "filter only last month")
+	regCmd.BoolVar(&dateThisMonth, "this", false, "filter only this month")
+	regCmd.StringVar(&argDateQuery, "date", "", "custom date query")
+	regCmd.StringVar(&argDateQuery, "d", "", "custom date query (shorthand)")
+	regCmd.BoolVar(&debug, "debug", false, "enable debug logs")
 
-	flag.BoolVar(&cmdReg, "reg", false, "register")
-	flag.BoolVar(&cmdBal, "bal", false, "balance")
-	flag.BoolVar(&cmdImport, "import", false, "import")
+	balCmd = flag.NewFlagSet("bal", flag.ExitOnError)
+	balCmd.BoolVar(&dateLastMonth, "last", false, "filter only last month")
+	balCmd.BoolVar(&dateThisMonth, "this", false, "filter only this month")
+	balCmd.StringVar(&argDateQuery, "date", "", "custom date query")
+	balCmd.StringVar(&argDateQuery, "d", "", "custom date query (shorthand)")
+	balCmd.BoolVar(&debug, "debug", false, "enable debug logs")
 
-	flag.BoolVar(&dateLastMonth, "last", false, "filter only last month")
-	flag.BoolVar(&dateThisMonth, "this", false, "filter only this month")
-	flag.StringVar(&argDateQuery, "date", "", "custom date query")
-	flag.StringVar(&argDateQuery, "d", "", "custom date query (shorthand)")
+	importCmd = flag.NewFlagSet("import", flag.ExitOnError)
+	importCmd.BoolVar(&amex, "amex", false, "use amex.rules to import")
+	importCmd.BoolVar(&citibank, "citi", false, "use citibank.rules to import")
+	importCmd.BoolVar(&ocbc, "ocbc", false, "use ocbc.rules to import")
+	importCmd.StringVar(&argInputFile, "f", "", "file to import")
+	importCmd.BoolVar(&argNoDry, "no-dry", false, "disable dry-run")
+	importCmd.BoolVar(&debug, "debug", false, "enable debug logs")
 
-	flag.BoolVar(&amex, "amex", false, "use amex.rules to import")
-	flag.BoolVar(&citibank, "citi", false, "use citibank.rules to import")
-	flag.BoolVar(&ocbc, "ocbc", false, "use ocbc.rules to import")
-	flag.StringVar(&argInputFile, "f", "", "file to import")
-	flag.BoolVar(&argNoDry, "no-dry", false, "disable dry-run")
+	flag.Usage = func() {
+		fmt.Printf(usage)
+	}
 
-	flag.BoolVar(&debug, "debug", false, "enable debug logs")
-	flag.Parse()
+	if len(os.Args) < 2 {
+		flag.Usage()
+		os.Exit(1)
+	}
 
-	err := execute()
+	switch os.Args[1] {
+	case "reg":
+		if err := regCmd.Parse(os.Args[2:]); err != nil {
+			fmt.Printf("error: %v\n", err)
+			os.Exit(1)
+		}
+	case "bal":
+		if err := balCmd.Parse(os.Args[2:]); err != nil {
+			fmt.Printf("error: %v\n", err)
+			os.Exit(1)
+		}
+	case "import":
+		if err := importCmd.Parse(os.Args[2:]); err != nil {
+			fmt.Printf("error: %v\n", err)
+			os.Exit(1)
+		}
+	default:
+		flag.Usage()
+		os.Exit(0)
+	}
+
+	args, err := buildArgs(os.Args[1])
 	if err != nil {
+		fmt.Printf("error: %v\n", err)
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	if err := execute(args); err != nil {
 		fmt.Printf("error: %v\n", err)
 		flag.Usage()
 		os.Exit(1)
 	}
 }
 
-func execute() error {
-	args := make([]string, 0)
+func buildArgs(command string) ([]string, error) {
+	if regCmd.Parsed() {
+		args := make([]string, 0)
 
-	// if..else ladder helps eliminate the unhandled situation of more than 1 cmd
-	if cmdReg {
-		args = append(args, register)
-		args = addDateQuery(args)
-	} else if cmdBal {
-		args = append(args, balance)
-		args = addDateQuery(args)
-	} else if cmdImport {
-		if argDateQuery != "" {
-			return errors.New("date query with import not understood")
+		if command == "reg" {
+			args = []string{register}
+		} else if command == "bal" {
+			args = []string{balance}
 		}
 
+		return addDateQuery(args), nil
+	}
+
+	if importCmd.Parsed() {
 		if argInputFile == "" {
-			return errors.New("filename required")
+			return nil, errors.New("filename required")
 		}
 
 		rulesFile := getRulesFile()
 		if rulesFile == "" {
-			return errors.New("could not set rules-file")
+			return nil, errors.New("could not set rules-file")
 		}
 
-		args = append(args, importValue, argInputFile, "--rules-file", rulesFile)
+		args := []string{importValue, argInputFile, "--rules-file", rulesFile}
 
 		// since this param is false by default,
 		// app default behaviour will be to use dry-run
 		if !argNoDry {
 			args = append(args, "--dry-run")
 		}
+
+		return args, nil
 	}
 
-	if len(args) < 1 {
-		return fmt.Errorf("1 arg required. got %d", len(args))
-	}
+	return nil, fmt.Errorf("could not build any args")
+}
 
+func execute(args []string) error {
 	if debug {
 		fmt.Println("debug: ", args)
 	}
