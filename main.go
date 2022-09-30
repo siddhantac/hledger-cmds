@@ -49,6 +49,11 @@ var usage = `Usage of hledger-cmds:
      ./cmd <cmd> -h
 `
 
+// TODO
+// - print unknowns
+// - print txns above $50
+// - print a end-of-month report
+
 func main() {
 	regCmd = flag.NewFlagSet("reg", flag.ExitOnError)
 	regCmd.BoolVar(&dateLastMonth, "last", false, "filter only last month")
@@ -130,24 +135,7 @@ func buildArgs(command string) ([]string, error) {
 	}
 
 	if importCmd.Parsed() {
-		if argInputFile == "" {
-			return nil, errors.New("filename required")
-		}
-
-		rulesFile := getRulesFile()
-		if rulesFile == "" {
-			return nil, errors.New("could not set rules-file")
-		}
-
-		args := []string{importValue, argInputFile, "--rules-file", rulesFile}
-
-		// since this param is false by default,
-		// app default behaviour will be to use dry-run
-		if !argNoDry {
-			args = append(args, "--dry-run")
-		}
-
-		return args, nil
+		return buildArgsForImport()
 	}
 
 	return nil, fmt.Errorf("could not build any args")
@@ -165,22 +153,6 @@ func execute(args []string) error {
 
 	fmt.Println(string(out))
 	return nil
-}
-
-func getRulesFile() string {
-	if amex {
-		return amexRules
-	}
-
-	if citibank {
-		return citiRules
-	}
-
-	if ocbc {
-		return ocbcRules
-	}
-
-	return ""
 }
 
 func addDateQuery(args []string) []string {
