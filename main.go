@@ -1,11 +1,11 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 const (
@@ -116,21 +116,18 @@ func main() {
 
 	if err := execute(args); err != nil {
 		fmt.Printf("error: %v\n", err)
-		flag.Usage()
 		os.Exit(1)
 	}
 }
 
 func buildArgs(command string) ([]string, error) {
 	if regCmd.Parsed() {
-		args := make([]string, 0)
+		args := []string{register}
+		return addDateQuery(args), nil
+	}
 
-		if command == "reg" {
-			args = []string{register}
-		} else if command == "bal" {
-			args = []string{balance}
-		}
-
+	if balCmd.Parsed() {
+		args := []string{balance}
 		return addDateQuery(args), nil
 	}
 
@@ -142,11 +139,14 @@ func buildArgs(command string) ([]string, error) {
 }
 
 func execute(args []string) error {
+	command := strings.Join(args, " ")
+	command = hledger + " " + command
+
 	if debug {
-		fmt.Println("debug: ", args)
+		fmt.Println("debug: ", command)
 	}
 
-	out, err := exec.Command(hledger, args...).CombinedOutput()
+	out, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%s: %w", string(out), err)
 	}
@@ -168,5 +168,5 @@ func addDateQuery(args []string) []string {
 		return append(args, dateQuery, thisMonth)
 	}
 
-	return nil
+	return args
 }

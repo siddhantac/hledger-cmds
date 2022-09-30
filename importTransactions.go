@@ -18,6 +18,7 @@ func buildArgsForImport() ([]string, error) {
 	// app default behaviour will be to use dry-run
 	if !argNoDry {
 		args = append(args, "--dry-run")
+		args = append(args, "|", hledger, "-f-", "-I", "reg")
 	}
 
 	return args, nil
