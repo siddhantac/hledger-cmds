@@ -1,6 +1,9 @@
 package main
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 func buildArgsForImport() ([]string, error) {
 	if argInputFile == "" {
@@ -19,6 +22,10 @@ func buildArgsForImport() ([]string, error) {
 	if !argNoDry {
 		args = append(args, "--dry-run")
 		args = append(args, "|", hledger, "-f-", "-I", "reg")
+
+		if amt != 0 {
+			args = append(args, fmt.Sprintf("\"amt:>=%d\"", amt))
+		}
 	}
 
 	return args, nil

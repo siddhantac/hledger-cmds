@@ -35,6 +35,7 @@ var (
 	amex     bool
 	citibank bool
 	ocbc     bool
+	amt      int
 
 	argDateQuery string
 	argInputFile string
@@ -76,6 +77,7 @@ func main() {
 	importCmd.StringVar(&argInputFile, "f", "", "file to import")
 	importCmd.BoolVar(&argNoDry, "no-dry", false, "disable dry-run")
 	importCmd.BoolVar(&debug, "debug", false, "enable debug logs")
+	importCmd.IntVar(&amt, "amt", 0, "print txns above this amount")
 
 	flag.Usage = func() {
 		fmt.Printf(usage)
