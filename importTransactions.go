@@ -44,5 +44,9 @@ func getRulesFile() string {
 		return ocbcRules
 	}
 
+	if dbs {
+		return dbsRules
+	}
+
 	return ""
 }

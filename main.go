@@ -14,12 +14,13 @@ const (
 	balance     = "balance"
 	importValue = "import"
 	dateQuery   = "-p"
-	lastMonth   = `"last month"`
-	thisMonth   = `"this month"`
+	lastMonth   = `"..last month"`
+	thisMonth   = `"..this month"`
 
 	amexRules = "amex.rules"
 	citiRules = "citibank.rules"
 	ocbcRules = "ocbc.rules"
+	dbsRules  = "dbs.rules"
 )
 
 var (
@@ -35,6 +36,7 @@ var (
 	amex     bool
 	citibank bool
 	ocbc     bool
+	dbs      bool
 	amt      int
 
 	argDateQuery string
@@ -74,6 +76,7 @@ func main() {
 	importCmd.BoolVar(&amex, "amex", false, "use amex.rules to import")
 	importCmd.BoolVar(&citibank, "citi", false, "use citibank.rules to import")
 	importCmd.BoolVar(&ocbc, "ocbc", false, "use ocbc.rules to import")
+	importCmd.BoolVar(&dbs, "dbs", false, "use dbs.rules to import")
 	importCmd.StringVar(&argInputFile, "f", "", "file to import")
 	importCmd.BoolVar(&argNoDry, "no-dry", false, "disable dry-run")
 	importCmd.BoolVar(&debug, "debug", false, "enable debug logs")
@@ -124,12 +127,12 @@ func main() {
 
 func buildArgs(command string) ([]string, error) {
 	if regCmd.Parsed() {
-		args := []string{register}
+		args := []string{register, "-H"}
 		return addDateQuery(args), nil
 	}
 
 	if balCmd.Parsed() {
-		args := []string{balance}
+		args := []string{balance, "-H"}
 		return addDateQuery(args), nil
 	}
 
