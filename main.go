@@ -53,6 +53,7 @@ var usage = `Usage of hledger-cmds:
 `
 
 // TODO
+// - add account filters to bal and reg cmds
 // - print unknowns
 // - print txns above $50
 // - print a end-of-month report
